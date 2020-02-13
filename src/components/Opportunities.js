@@ -46,7 +46,7 @@ export default class Opportunity extends React.Component {
 
     //TODO:getting the API
     const url =
-      "http://api-staging.aiesec.org/v2/opportunities/favourite?access_token=dd0df21c8af5d929dff19f74506c4a8153d7acd34306b9761fd4a57cfa1d483c";
+      "https://api-staging.aiesec.org/v2/opportunities/favourite?access_token=dd0df21c8af5d929dff19f74506c4a8153d7acd34306b9761fd4a57cfa1d483c";
     fetch(url)
       .then(data => data.json())
       .then(parsedJSON =>
