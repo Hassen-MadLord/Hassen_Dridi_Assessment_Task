@@ -1,0 +1,16 @@
+* {
+	scroll-behavior: smooth;
+}
+.position-relative {
+	position: relative !important;
+}
+.d-inline-flex {
+	display: inline-flex !important;
+}
+.d-flex {
+	display: flex !important;
+	margin-left: 185px;
+}
+.align-items-center {
+	align-items: center !important;
+}

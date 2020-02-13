@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <link rel="shortcut icon" href="%PUBLIC_URL%/aiesec_logo.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="description" content="Web site created using create-react-app" />
+  <!-- <link rel="apple-touch-icon" href="logo192.png" /> -->
+  <!-- <link rel="manifest" href="%PUBLIC_URL%/manifest.json" /> -->
+  <!-- <link rel="stylesheet" href="index.css"> -->
+  <!--
+      Notice the use of %PUBLIC_URL% in the tags above.
+      It will be replaced with the URL of the `public` folder during the build.
+      Only files inside the `public` folder can be referenced from the HTML.
+
+      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
+      work correctly both with client-side routing and a non-root public URL.
+      Learn how to configure a non-root public URL by running `npm run build`.
+    -->
+  <title>Explore | AIESEC</title>
+</head>
+
+<body>
+  <!-- Google Tag Manager (noscript) -->
+  <noscript>
+    <iframe src="https://www.googletagmanager.com/ns.html?id=GTM-M7CQPCB" height="0" width="0"
+      style="display:none;visibility:hidden"></iframe>
+  </noscript>
+
+  <div id="splashScreen">
+    <div class="aiesec-logo">
+      <img src="assets/images/favicon-no-border.png" style="width: 100%;" alt="AIESEC Logo">
+    </div>
+    <div class="pre-loading">
+      <div class="spinner">
+        <div class="rect1"></div>
+        <div class="rect2"></div>
+        <div class="rect3"></div>
+        <div class="rect4"></div>
+        <div class="rect5"></div>
+      </div>
+    </div>
+  </div>
+
+
+  <script>
+    const localFeatureVersion = window.localStorage.getItem('ngx-webstorage|features-version');
+    const localFeatureData = window.localStorage.getItem('ngx-webstorage|features');
+    let preLoading = document.getElementById("splashScreen");
+    let featured = false;
+    let public_token = '';
+    let apiUrl = '';
+    let featureObj = {};
+    let featuresObject = {};
+    let regionUrl = '';
+    preLoading.style.display = 'none';
+    window.__aiesec = {
+      feature: {}
+    };
+
+    function showLoader() {
+      if (window.outerWidth < 991) {
+        preLoading.style.display = 'block';
+      }
+    }
+
+    async function fetchRegion() {
+      try {
+        if (document.location.hostname === 'localhost') {
+          regionUrl = `${document.location.protocol}//${document.location.hostname}:4300`;
+        } else {
+          regionUrl = `${document.location.protocol}//${document.location.host}`;
+        }
+
+        let data;
+        try {
+          data = await (await fetch(`${regionUrl}/getRegion`)).json();
+        } catch (e) {
+          console.log('error fetching region, defaulting to global');
+          data = { region: "Global" };
+        }
+        featureObj['region'] = data.region;
+        featuresObject['region'] = data.region;
+        window.__aiesec.feature['region'] = data.region;
+      } catch (e) {
+        console.log('Error is: ', e);
+      }
+    }
+
+    function sendFeaturedRequest(callback) {
+      var hostname = window.location.hostname;
+      if (hostname === "aiesec.org" || hostname === 'aiesec.org.cn') {
+        apiUrl = "https://api.aiesec.org";
+        public_token = "e316ebe109dd84ed16734e5161a2d236d0a7e6daf499941f7c110078e3c75493"
+      } else {
+        apiUrl = "https://api-staging.aiesec.org";
+        public_token = "dd0df21c8af5d929dff19f74506c4a8153d7acd34306b9761fd4a57cfa1d483c"
+      }
+      let xhttp = new XMLHttpRequest();
+      xhttp.onreadystatechange = function () {
+        if (+this.readyState === 4 && +this.status === 200) {
+          callback(this);
+        }
+      };
+      xhttp.open("GET", apiUrl + "/v2/features?access_token=" + public_token, false);
+      xhttp.send();
+    }
+
+    function callbackMethod(data) {
+      let featuresArray = JSON.parse(data.response);
+      let fontStyleTag = document.createElement('style');
+
+      for (let i = 0; i < featuresArray.length; i++) {
+        const host = window.location.host;
+        if (featuresArray[i].feature !== 'crisp_chat_enabled') {
+          featureObj[featuresArray[i].feature] = featuresArray[i].active;
+          window.__aiesec.feature[featuresArray[i].feature] = featuresArray[i].active;
+
+          // Chinese user redirection to .org.cn
+          if (featuresArray[i].feature === 'redirect_on_load' && featuresArray[i].option && featureObj.redirect_on_load
+            && host === 'aiesec.org') {
+            window.location.href = `${window.location.protocol}//${featuresArray[i].option}${window.location.pathname}`;
+          }
+
+        } else {
+          featureObj[featuresArray[i].feature] = featureObj['region'] === 'China' ? false : featuresArray[i].active;
+          window.__aiesec.feature[featuresArray[i].feature] = featureObj['region'] === 'China' ? false : featuresArray[i].active;
+        }
+        if (featuresArray[i].feature === "Loading Screen On Mobile") {
+          featured = featuresArray[i].active;
+          window.__aiesec.feature[featuresArray[i].feature] = featuresArray[i].active;
+        }
+      }
+      if (featureObj.crisp_chat_enabled) {
+        // Crisp chat script
+        let crispChatScript = document.createElement('script');
+        crispChatScript.setAttribute('async', '');
+        crispChatScript.innerHTML =
+          `window.$crisp = [];
+            window.CRISP_WEBSITE_ID = "0757ca0c-951f-49ed-8de6-2726fd50c50b";
+            (function () {
+              d = document;
+              s = d.createElement("script");
+              s.src = "https://client.crisp.chat/l.js";
+              s.async = 1;
+              d.getElementsByTagName("head")[0].appendChild(s);
+            })();
+        `;
+        document.head.appendChild(crispChatScript);
+      }
+
+      if (featureObj.google_charts_support) {
+        let googleStatic = document.createElement('script');
+        googleStatic.setAttribute('async', '');
+        googleStatic.setAttribute('src', 'https://www.gstatic.com/charts/loader.js');
+        document.head.appendChild(googleStatic);
+      }
+      if (featureObj.ga_support) {
+        let tagManagerScript = document.createElement('script');
+        tagManagerScript.setAttribute('async', '');
+        tagManagerScript.innerHTML =
+          `
+              (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+              new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+              j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+              'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+              })(window,document,'script','dataLayer','GTM-M7CQPCB');
+            `;
+        document.head.appendChild(tagManagerScript);
+      }
+      if (featureObj.adyen_support) {
+        let adyenScript = document.createElement('script');
+        adyenScript.setAttribute('async', '');
+        adyenScript.setAttribute('src', 'https://live.adyen.com/hpp/cse/js/2615108398600101.shtml');
+        // adyenScript.setAttribute('src', 'https://test.adyen.com/hpp/cse/js/8214882028871447.shtml');
+        // Also get appropriate adyen config in server/config.ts
+        document.body.appendChild(adyenScript);
+      }
+      if (!featured) {
+        // don't show preloader if the value is true.
+        showLoader();
+      }
+    }
+
+    function getVersions(url) {
+      let data = {
+        response: JSON.parse(localFeatureData)
+      };
+      let xhttp = new XMLHttpRequest();
+      xhttp.onreadystatechange = function () {
+        if (+this.readyState === 4 && +this.status === 200) {
+          if (this.response) {
+            window.localStorage.setItem('ngx-webstorage|versions', this.response);
+          }
+          if (this.response && JSON.parse(this.response).features != localFeatureVersion) {
+            sendFeaturedRequest(callbackMethod);
+          } else {
+            data = {
+              response: JSON.parse(localFeatureData)
+            };
+            callbackMethod(data);
+          }
+        } else if (+this.readyState === 4) {
+          sendFeaturedRequest(callbackMethod);
+        }
+      };
+      xhttp.open("GET", url, false);
+      xhttp.send();
+    }
+
+    fetchRegion().then(r => {
+      setFeaturesData();
+    }, err => {
+      setFeaturesData();
+    });
+
+    function setFeaturesData() {
+      if (!localFeatureVersion || !localFeatureData) {
+        sendFeaturedRequest(callbackMethod);
+      } else {
+        if (featuresObject['region'] !== 'China') {
+          getVersions('https://s3-eu-west-1.amazonaws.com/cdn.expa.aiesec.org/versions.json');
+        } else {
+          getVersions('https://yop-static.aiesec.org.cn/versions.json');
+        }
+      }
+    }
+  </script>
+  <app-component></app-component>
+  <!-- Google Charts -->
+  <script>
+    // !important: You want to give this variable(var googleLoaded = false;). This is used to run multiple chart in your jade.
+    let googleLoaded = false;
+    // !important: Define which chart packages to preload.Because this package uses ChartWrappers you can use any chart type that Google supports, but if it // isn't loaded it will load it on demand.
+    let googleChartsPackagesToLoad = ['geochart'];
+  </script>
+  <!-- AIESEC Germany Script -->
+  <script async src="https://bookmarks.aiesec.de/v2/bookmarklets/aiesecBookmarklet.min.js"></script>
+
+  <script type="text/javascript">
+    let efsetWidget = {};
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./firebase-messaging-sw.js').then(function (registration) {
+      }).catch(function (err) {
+        console.log('Service Worker registration failed: ', err);
+      });
+    }
+  </script>
+  <audio id="notificationSound">
+    <source src="assets/audio/notification.mp3" type="audio/mpeg">
+    <source src="assets/audio/notification.ogg" type="audio/ogg">
+    <embed hidden="true" autostart="true" loop="false" src="assets/audio/notification.mp3">
+  </audio>
+  <script type="text/javascript" src="runtime.96e9def23ed6cb11df2e.js"></script>
+  <script type="text/javascript" src="main.0c2dd9351f39ca807986.js"></script>
+  <noscript>You need to enable JavaScript to run this app.</noscript>
+  <div id="root"></div>
+
+</body>
+
+</html>
